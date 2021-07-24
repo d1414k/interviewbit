@@ -1,70 +1,91 @@
 // https://www.interviewbit.com/problems/maximum-area-of-triangle/
 
 public class Solution {
-    int r[];// = new int[2]{-1,-1};//min and max column no
-    int g[];// = new int[2]{-1,-1};
-    int b[];// = new int[2]{-1,-1};
     public int solve(String[] A) {
         if(A == null || A.length <= 1)
             return 0;
-        int n = A.length;
-        int m = A[0].length();
-        r = new int[]{-1,-1};//min and max column no
-        g = new int[]{-1,-1};
-        b = new int[]{-1,-1};
-        int [][] maxRow = new int[m][3];// each column what is max value for r g b
-        for(int j = 0 ; j < m ; j++){
-            for(int i = 0 ; i < n ; i++){
-                char c = A[i].charAt(j);
-                if(c == 'r' && r[0] == -1){
-                    r[0] = j;
-                }else if(c == 'g' && g[0] == -1){
-                    g[0] = j;                
-                }else if(c == 'b' && b[0] == -1){
-                    b[0] = j;
-                }
-            }        
-        }
-        for(int j = m-1 ; j >=0 ; j--){
-            for(int i = 0 ; i < n ; i++){
-                char c = A[i].charAt(j);
-                if(c == 'r' && r[1] == -1){
-                    r[1] = j;
-                }else if(c == 'g' && g[1] == -1){
-                    g[1] = j;                
-                }else if(c == 'b' && b[1] == -1){
-                    b[1] = j;
-                }
-            }        
-        }
-        // for each column find pair and then area
-        int res = 0;
-        for(int j = m-1 ; j >= 0 ; j--){
-            for(int i = 0 ; i < n ; i++){
-                for(int k = i + 1 ; k < n ; k++){
-                    char ch1 = A[i].charAt(j),ch2 = A[k].charAt(j);
-                    if(ch1 != ch2){
-                        res = Math.max(res,(int)Math.ceil(((k-i+1)*height(ch1,ch2,j))/2.0));
-                        //System.out.println(res+" "+i+" "+j+" "+ch1+" "+ch2);
-                    }
-                }
-            }        
-        }
-        return res;
+        GridSummary gs = new GridSummary(A.length,A[0].length(),A);
+        return gs.getMaxArea();
     }
-    int height(char ch1, char ch2, int col){
-        char ch3 = find(ch1,ch2); //System.out.println(ch3);
-        if(ch3 == 'r')
-            return Math.max((r[0] == -1 || r[0] >= col) ? 0 : col-r[0]+1, (r[1] == -1 || r[1] <= col) ? 0 : r[1]-col+1);
-        if(ch3 == 'g')
-            return Math.max((g[0] == -1 || g[0] >= col) ? 0 : col-g[0]+1, (g[1] == -1 || g[1] <= col) ? 0 : g[1]-col+1);
-        return Math.max((b[0] == -1 || b[0] >= col) ? 0 : col-b[0]+1, (b[1] == -1 || b[1] <= col) ? 0 : b[1]-col+1);
+}
+
+class GridSummary {
+    int rows, cols, rMinCol = -1, rMaxCol = -1, gMinCol = -1, gMaxCol = -1,bMinCol = -1,bMaxCol = -1;
+    String[] A;
+    int [][]colMinMax;// save row nums
+    GridSummary(int rows, int cols, String[] A){
+        this.rows = rows;
+        this.cols = cols;
+        this.A = A;
+        // r = 0,1 : g = 2,3 : b = 4,5
+        colMinMax = new int[cols][6];// [rmin,rmax,gmin,gmax,bmin,bmax]
+        for(int j = 0; j < cols ; j++)
+            Arrays.fill(colMinMax[j],-1);
+        rMinCol = gMinCol = bMinCol = cols;
+        for(int j = 0 ; j < cols ; j++){
+            for(int i = 0 ; i < rows ; i++){
+                switch(A[i].charAt(j)){
+                    case 'r':
+                        if(colMinMax[j][0] == -1)
+                           colMinMax[j][0] = i;
+                        colMinMax[j][1] = i; 
+
+                        rMinCol = Math.min(rMinCol,j);
+                        rMaxCol = Math.max(rMaxCol,j);
+                        break;
+                    case 'g':
+                        if(colMinMax[j][2] == -1)
+                           colMinMax[j][2] = i;
+                        colMinMax[j][3] = i; 
+                        
+                        gMinCol = Math.min(gMinCol,j);
+                        gMaxCol = Math.max(gMaxCol,j);
+                        break;
+                    case 'b':
+                        if(colMinMax[j][4] == -1)
+                           colMinMax[j][4] = i;
+                        colMinMax[j][5] = i; 
+
+                        bMinCol = Math.min(bMinCol,j);
+                        bMaxCol = Math.max(bMaxCol,j);
+                }
+            }
+        }
     }
-    char find(char ch1,char ch2){
-        if((ch1 == 'r' && ch2 == 'g') || (ch1 == 'g' && ch2 == 'r'))
-            return 'b';
-        if((ch1 == 'r' && ch2 == 'b') || (ch1 == 'b' && ch2 == 'r'))
-            return 'g';
-        return 'r';
+    int getMaxArea(){
+        int maxArea = 0;
+        for(int j = 0 ; j < cols ; j++){
+            int base = 0; 
+            // r, g be base
+            if((base = getBase(j,0,2)) > 0){
+                if(bMinCol != cols)
+                    maxArea = Math.max(maxArea, (int)Math.ceil((base*(Math.abs(bMinCol-j)+1)/2.0)));
+                if(bMaxCol != -1)
+                    maxArea = Math.max(maxArea, (int)Math.ceil((base*(Math.abs(bMaxCol-j)+1)/2.0)));
+            }
+            // r, b be base
+            if((base = getBase(j,0,4)) > 0){
+                if(gMinCol != cols)
+                    maxArea = Math.max(maxArea, (int)Math.ceil((base*(Math.abs(gMinCol-j)+1)/2.0)));
+                if(gMaxCol != -1)
+                    maxArea = Math.max(maxArea, (int)Math.ceil((base*(Math.abs(gMaxCol-j)+1)/2.0)));
+            }
+            // g , b be base
+            if((base = getBase(j,2,4)) > 0){
+                if(rMinCol != cols)
+                    maxArea = Math.max(maxArea, (int)Math.ceil((base*(Math.abs(rMinCol-j)+1)/2.0)));
+                if(rMaxCol != -1)
+                    maxArea = Math.max(maxArea, (int)Math.ceil((base*(Math.abs(bMaxCol-j)+1)/2.0)));
+            }
+        }
+        return maxArea;
+    }
+    // check if this can be base
+    int getBase(int col, int x, int y){
+        if(colMinMax[col][x] == -1 || colMinMax[col][y] == -1 ) return 0;
+        int base = 0;
+        base = Math.max(base,colMinMax[col][x+1] - colMinMax[col][y]+1);
+        base = Math.max(base,colMinMax[col][y+1] - colMinMax[col][x]+1);
+        return base;
     }
 }
